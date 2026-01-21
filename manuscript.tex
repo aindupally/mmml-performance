@@ -1,0 +1,1384 @@
+\documentclass[11pt]{article}
+
+% Required packages
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{amsmath}
+
+% Set margins (adjust as needed)
+\usepackage[margin=1in]{geometry}
+
+\begin{document}
+
+\hfill\break
+\textbf{Proceedings of the ASME 2025}
+
+\textbf{International Design Engineering Technical Conferences and\\
+Computers and Information in Engineering Conference}
+
+\textbf{IDETC/CIE2025\\
+August 17-20, 2025, Anaheim, California}
+
+DETC2025-168841
+
+Developing multi-modal machine learning model for PREDICTING PERFORMANCE
+OF AUTOMOTIVE HOOD FRAMEs
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2366}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2626}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\textbf{Abhishek Indupally}
+
+Clemson University
+
+Clemson, SC
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{Satchit Ramnath*}
+
+Clemson University
+
+Clemson, SC
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\end{longtable}
+}
+
+Abstract
+
+\emph{Is there a way for a designer to evaluate the performance of a
+given hood frame geometry without spending significant time on
+simulation setup? This paper seeks to address this challenge by
+developing a multimodal machine-learning (MMML) architecture that learns
+from different modalities of the same data, to predict performance
+metrics. It also aims to use the MMML architecture to enhance the
+efficiency of engineering design processes by reducing reliance on
+computationally expensive simulations in the initial phases of design.
+The proposed architecture helps accelerate design exploration, enabling
+rapid iteration while maintaining high accuracy in predictions. The
+study also presents results that show that by combining multiple data
+modalities, MMML outperforms traditional single-modality (or unimodal)
+approaches. Two new frame geometries, not part of the training dataset,
+are also used for prediction using the trained MMML model to showcase
+the ability to generalize to unseen frame models. The findings
+underscore MMML\textquotesingle s potential in supplementing traditional
+simulation-based workflows, particularly in the conceptual design phase,
+and highlight its role in bridging the gap between machine learning and
+real-world engineering applications. This research paves the way for the
+broader adoption of machine learning techniques in engineering design,
+with a focus on refining multimodal approaches to optimize structural
+development and accelerate the design cycle.}
+
+Keywords: multimodal machine learning, computer-aided design,
+computer-aided engineering, geometric dataset, data-driven design,
+structural predictions using ML
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  INTRODUCTION
+\end{enumerate}
+
+In engineering design, a structured and systematic approach is essential
+for developing effective solutions {[}1{]}. One of the primary tasks in
+the conceptual design phase is assessing the structural integrity and
+overall performance of the design. Traditionally, evaluating structural
+integrity requires computational simulations such as Finite Element
+Analysis (FEA), which involves defining boundary conditions, running
+simulations, and validating results {[}2{]}. While highly accurate, and
+also necessary, FEA is computationally expensive and time-intensive,
+potentially creating bottlenecks in the iterative design process during
+the initial phases. This slows down innovation and increases the design
+cycle time, affecting the number of design alternatives explored.
+Reducing design cycle time is, therefore, crucial, as it enables
+engineers to assess multiple configurations more efficiently, refine
+their designs in real time, and accelerate product development without
+compromising accuracy.
+
+Machine learning (ML) advancements offer to supplement traditional
+simulation-driven design workflows. ML-based models can learn from
+existing simulation data and provide fast, approximate performance
+metrics predictions, allowing engineers to evaluate design iterations in
+real time. This rapid feedback loop enhances the design process by
+enabling quick assessments and iterative refinements.
+
+In the context of an automotive hood design, the hood consists of two
+primary components: the outer skin and the hood frame, as shown in
+\hyperref[_Ref193023952]{Figure 1}. The hood skin refers to the outer,
+visible panel (class-A surface) of the hood, defining the
+vehicle\textquotesingle s aesthetics and aerodynamics, while the hood
+frame is the structural support underneath that panel, providing
+structural integrity, crash safety, and attachment points. The frame
+consists of various geometrical features, as shown in
+\hyperref[_Ref193044630]{Figure 2}. The ribs are considered the primary
+features since they provide structural stiffness, and the pockets are
+the secondary features that help reduce the weight. Since the hood skin
+dictates the design space and the curvature, the frame must be
+engineered to follow the same design guidelines while still satisfying
+performance requirements such as weight and strength.
+
+\includegraphics[width=1.5in,height=1.14028in]{media/image1.png}
+\includegraphics[width=1.5in,height=1.11319in]{media/image2.png}
+
+(a) (b)
+
+\begin{figure}
+\centering
+\includegraphics[width=3.5in,height=1.70412in,alt={A close-up of a car\textquotesingle s front bumper AI-generated content may be incorrect.}]{media/image3.png}
+\caption{\protect\phantomsection\label{_Ref193023952}{}Figure 1: (a)
+Automotive hood skin and (b) the frame {[}3{]}}
+\end{figure}
+
+\protect\phantomsection\label{_Ref193044630}{}Figure 2: Primary features
+on a hood frame (Ribs), secondary features on a hood frame (Pockets)
+
+A designer developing a hood frame must assess its structural integrity
+using FEA by predicting key performance metrics, which may include
+stresses and deflections. However, relying solely on FEA for these
+evaluations is effort and time-intensive, as each iteration requires
+re-running simulations, creating a computational bottleneck that limits
+rapid design exploration. Effective feedback during the design cycle
+{[}4{]} is crucial, as it allows designers to quickly estimate
+performance metrics, assess structural integrity, and refine their
+concepts without the time-intensive burden of full-scale simulations. To
+enable this, a method for quick performance estimation is needed---one
+that enables designers to analyze localized effects of geometric
+changes, add or remove structural features, and understand how these
+modifications impact performance without the computational overhead of
+full-scale simulations.
+
+Although these methods aid in conceptual automotive body designs,
+predicting structural performance accurately during the design process
+requires a model that can effectively capture and interpret complex
+geometric relationships. Capturing the complex details and relationships
+may not explicitly be available in a dataset, and hence requires new
+model architectures to extract, learn, and build the implicit
+relationships. This can be achieved by extracting data in different
+representations called ``\emph{modalities}''. The concept of modality is
+foundational in multimodal machine learning, referring to a specific
+representation of information in a particular format. Liang et al.
+{[}5{]} describe modality as "a way in which a natural phenomenon is
+perceived or expressed". This definition encompasses various types of
+representations, including visual, auditory, textual, and numerical
+data. Although research has been done to evaluate various ML models to
+predict the performance of designs, especially for automotive body
+design, the input data to these models are unimodal - only one modality
+- like images or point clouds or parameters.
+
+This research proposes a Multi-Modal ML (MMML) architecture that can
+process different modalities to make accurate predictions. In this
+research, the three primary modalities considered are: image data,
+geometric data, and parametric data. The approach integrates image-based
+features extracted from convolutional neural networks (CNNs) with
+geometric and parametric data to improve the overall predictive
+accuracy. \hyperref[_Ref193056771]{Figure 3} shows the workflow for the
+MMML model. The images provide spatial and visual information; the
+geometric data includes cross-sectional profiles of the design, and the
+parametric data includes parameters corresponding to geometric features
+in the model. Combining multiple modalities enables a more comprehensive
+understanding of a design's behavior. The contributions of this research
+are:
+
+\begin{itemize}
+\item
+  Development of a Custom MMML Architecture -- Design and develop a MMML
+  architecture that integrates various modalities to predict key
+  performance metrics.
+\item
+  Comparison with Single-Modality Models -- The proposed MMML
+  architecture is evaluated against a baseline model trained with a
+  single modality to assess the benefits of multimodal learning.
+\item
+  Generalization to Unseen Designs -- The model is tested on new hood
+  frame designs to evaluate its robustness, predictive accuracy, and
+  ability to generalize beyond the training data.
+\end{itemize}
+
+\begin{figure}
+\centering
+\includegraphics[width=3.5in,height=3.11389in]{media/image4.png}
+\caption{\protect\phantomsection\label{_Ref193056771}{}Figure 3:
+Multi-modal machine learning flowchart}
+\end{figure}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\item
+  \textbf{BACKGROUND}
+\end{enumerate}
+
+Machine learning algorithms are increasingly used in automotive body
+design to optimize safety, performance, material efficiency, and cost.
+By analyzing large datasets, these algorithms help predict outcomes and
+improve decision-making in areas like crashworthiness, panel rigidity,
+and material usage. ML can also help automate design tasks, speeding up
+development cycles and aiding innovation.
+
+\textbf{2.1 Machine Learning in Automotive Design}
+
+There has been quite a bit of research into integrating ML algorithms
+into the domain of automotive design. Liu et al. {[}6{]} proposed a
+structured framework to develop design-specific knowledge graphs, which
+are then used in deep learning to learn graph embeddings, make
+predictions, and support reasoning. Bodendorf and Franke {[}7{]}
+compared various machine learning approaches to predict the costs in an
+early product design phase of automotive components. The study looked at
+the performance of six machine learning algorithms for estimating costs.
+Felix et al. {[}8{]} proposed an approach that mirrors the team
+structure of engineers, CAD designers, and quality assurance, with a
+Vision Language Model (VLM)-based Multi-Agent System with access to
+parametric CAD tooling and documentation. Combining agents for
+requirements engineering, CAD engineering, and vision-based quality
+assurance, a model is generated automatically from sketches and/ or
+textual descriptions. Wong et al. {[}9{]} proposed an end-to-end prompt
+evolution design optimization (PREDO) framework contextualized in a
+vehicle design scenario that leverages a vision-language model to
+penalize impractical car designs synthesized by a generative model. The
+research used an evolutionary strategy coupled with an optimization
+objective function that comprises a physics-based solver and a
+vision-language model for practical or functional guidance in the
+generated car designs. Rios et al. {[}10{]} propose and realize a fully
+automated evolutionary design optimization framework using Shap-E
+{[}11{]} in the context of aerodynamic vehicle optimization. Zhen et al.
+{[}12{]} proposed a method for automotive hood design based on machine
+learning-assisted structural optimization. The objective of the study
+was to optimize the hood frame for pedestrian head impact loads.
+
+\textbf{2.2 Multi-Modal Machine Learning}
+
+Multimodal machine learning tasks emerge when inputs or outputs are
+represented in various formats or when different types of atomic units
+of information are combined within the same system {[}13{]}. These
+models have gained significant traction due to their ability to leverage
+complementary information from multiple modalities, leading to more
+informed predictions. For instance, visual information can be enhanced
+with textual descriptions or numerical features to generate more precise
+models that account for real-world complexities. Integrating multiple
+modalities has proven highly effective in improving prediction accuracy
+and generalization across various machine-learning applications.
+Baltrusaitis et al. {[}14{]} provide a comprehensive overview of
+multimodal machine learning, highlighting five main technical
+challenges: representation, translation, alignment, fusion, and
+co-learning. Their work emphasizes that multimodal models often
+outperform unimodal counterparts by capturing diverse aspects of input
+data, thereby mitigating the limitations of any single modality.
+
+Multimodal machine learning (MMML) has demonstrated significant
+advancements in predictive modeling, particularly in automotive
+engineering. Su et al. {[}15{]} highlight the benefits of integrating
+multiple data modalities over unimodal approaches, which rely on a
+single data source and may lead to incomplete insights. The MMML model
+used in the research combines images, text, and parametric data to
+predict five key vehicle rating scores, achieving a 4\% to 12\%
+improvement over unimodal models. This underscores the value of
+leveraging diverse data types for more accurate predictions. While the
+work focuses on vehicle ratings, a similar challenge exists in
+evaluating the performance of CAD-based mechanical components.
+Structured parametric data often provides the most informative input,
+but non-visual data, such as text, can sometimes outperform images in
+predictive tasks.
+
+In computer-aided design (CAD), particularly in conceptual design,
+integrating multiple data representations can enhance the design
+process. Li et al. {[}16{]} introduced LLM4CAD, a large language model
+that combines images, sketches, and textual descriptions to generate 3D
+geometry. The research underscores the importance of multimodal
+approaches in CAD, demonstrating how the fusion of different input
+modalities can lead to more expressive and effective design workflows.
+By bridging visual and textual representations, MMML facilitates
+interactive and sophisticated design processes, enabling designers to
+explore and refine concepts more efficiently. A key takeaway from
+LLM4CAD is the crucial role of high-quality datasets in the success of
+multimodal models. As research in this domain progresses, developing
+diverse, domain-specific datasets will be essential for improving
+predictive performance and generalizability in engineering design
+models.
+
+A study by Gong et al. {[}17{]} on bimodal learning in materials science
+highlights the advantages of combining composition and structure data to
+predict material properties. The framework processes composition as
+vectors and structure as graphs, fusing these modalities to enhance
+predictive performance. The results demonstrate that bimodal models
+consistently outperform unimodal approaches by capturing complementary
+information, reinforcing the value of integrating diverse data types.
+The research also highlights the importance of effective data
+representation for machine learning applications.
+
+The study by Kumar {[}18{]} on geometrical parameter extraction from
+flexible mechanical components and assemblies provides critical insights
+into the application of machine learning for mechanical performance
+prediction. By leveraging the CarHoods10K {[}19{]} dataset, a
+comprehensive collection of 10,000 validated automotive hood frame
+geometries, the study establishes a strong foundation for data-driven
+design evaluation. One of the key contributions of Kumar's work is the
+multi-view approach (using images), which demonstrates how various views
+of hood frames can enhance structural understanding. The method uses
+images to extract features for performance prediction. However, the
+study also reveals a fundamental limitation of image-only models---while
+they effectively capture visual and shape-based features, they lack
+structured, numerical context that could provide deeper insights into
+mechanical behavior.
+
+Hwang et al. {[}20{]} present EMMA, a new approach to improving
+autonomous driving systems by using artificial intelligence (AI) to
+process and understand multiple types of information at once.
+Traditional self-driving systems rely on separate components for tasks
+like detecting objects, planning movements, and understanding road
+layouts. These components work independently and pass information
+between them, which can sometimes lead to errors and inefficiencies.
+Instead of using separate modules, EMMA takes in all the necessary
+data---like camera images, navigation directions, and vehicle
+status---and processes it in a single unified AI model. This allows the
+system to make driving decisions more efficiently and accurately. One of
+the key innovations is the use of Multimodal Large Language Models
+(MLLMs), a type of AI that can combine different types of inputs (such
+as images and text) into a single understanding of the driving
+environment. While EMMA is a promising step toward smarter self-driving
+AI, the authors acknowledge some limitations, such as high computational
+requirements and challenges in processing depth and distance information
+because it does not use LiDAR (a laser-based distance measurement
+technology).
+
+Acosta et al. {[}21{]} explore how integrating multiple data
+sources---such as medical images, genomics, biosensors, and clinical
+records---can enhance artificial intelligence (AI) applications in
+healthcare. The authors highlight the limitations of current AI models,
+which typically rely on a single data modality and provide only
+moment-in-time assessments, whereas real-world medical decisions require
+continuous, multimodal inputs. A key contribution of this work is its
+discussion of multimodal AI models, which can analyze diverse biomedical
+data types, including wearable sensors, genetic and epigenetic markers,
+imaging, clinical text, and social determinants of health. By combining
+these sources, multimodal AI enables more accurate diagnosis, prognosis,
+and treatment planning, bridging gaps in current medical AI
+applications.
+
+The proposed research builds upon these foundations, leveraging
+multimodal learning to predict the performance of automotive hood
+frames. By combining image data with geometric and parametric
+information, the research aims to overcome the limitations of unimodal
+and multi-view CNN approaches and provide more accurate, robust
+predictions for structural performance.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\item
+  \textbf{DATASET EXTRACTION AND PREPROCESSING}
+\end{enumerate}
+
+The CarHoods10K dataset offers over 10,000 3D mesh automobile hood frame
+geometries developed by an industry-standard CAD generation process
+{[}19{]}{[}22{]}. The dataset contains highly realistic,
+expert-validated designs that are created by generating over 100
+parameterized shape variants (from skins and feature patterns) through a
+feature-based modeling approach. This technique enables the creation of
+diverse designs by adjusting parameters that influence key features like
+ribs and cut-outs, which are essential for the structural integrity of
+the hoods. Each model in the dataset is available in STL format, along
+with design parameters and performance metrics from finite element
+analysis (FEA), such as stress, deformation, and mass. These details are
+vital for developing advanced computational and ML models to predict
+performance in automotive engineering. \hyperref[_Ref193037678]{Figure
+4} displays the 100 shape variants in the geometry dataset. A
+feature-based design approach was used to generate the large dataset,
+details of which can be found in {[}23{]}. The performance data for the
+models in the dataset, which include vonMises stress, direction
+deflection, and mass, were obtained from FEA as described in {[}24{]}.
+The proposed method uses the dataset to extract data -- images,
+geometric data, and parametric data -- for training and validating
+advanced architectures that will aid designers in evaluating new designs
+rapidly.
+
+\begin{figure}
+\centering
+\includegraphics[width=3.5in,height=2.41184in]{media/image5.png}
+\caption{\protect\phantomsection\label{_Ref193037678}{}Figure 4 :
+CarHoods10K dataset shape variations}
+\end{figure}
+
+\textbf{3.1 Image Dataset (Top and Side Views)}
+
+The top (or normal direction) view of the hood frame is extracted and
+used to give the ML model context about the type, number, and position
+of various geometrical features with respect to the design space of the
+frame, while the side views give context about the curvature and
+``flow'' of the hood frame. By combining these perspectives, the ML
+model can better understand and extract the object's shape, contents,
+and structure. These features, extracted from the images, are essential
+for predicting the performance of the hood frame, such as load-bearing
+capacity or stress distribution. The images are processed using two
+separate Residual Networks (ResNet50) {[}25{]}. ResNet was chosen
+because of the efficiency and speed of training the model. ResNet50
+makes predictions by categorizing an image, and in this case, the goal
+is to train the model to predict the frame\textquotesingle s performance
+based on the extracted features. \hyperref[_Ref193045931]{Figure 5}
+shows an example of top and side views of a hood frame.
+
+\includegraphics[width=2in,height=1.64787in]{media/image6.png}
+
+\protect\phantomsection\label{_Ref193045931}{}Figure 5: (a) Top view (b)
+side view of a hood frame
+
+\textbf{3.2 Geometric and Parametric Data (Cross-sections \& Feature
+Depths)}
+
+Given the change in curvature along the hood frame, extracting the
+cross-section at two locations -- 25\% and 75\% along the width -- would
+help provide additional information about the frame to the algorithm.
+This is the geometric data or modality that is part of the MMML
+algorithm. The change in curvature of the frame is not ``visible'' or
+available from the image data. \hyperref[_Ref193053659]{Figure 6} shows
+the locations at which the cross-sections of the frame are extracted.
+The cross-sections are generated by generating planes at the two
+locations and then using them to slice the frame model. It is automated
+
+\begin{figure}
+\centering
+\includegraphics[width=2.88056in,height=1.97986in]{media/image7.png}
+\caption{\protect\phantomsection\label{_Ref193053659}{}Figure 6: Frame
+with the 25\% and 75\% location for cross-sections}
+\end{figure}
+
+A custom Python script is used to generate the cross-sections from the
+geometry files in the dataset. The extracted cross-sections are recorded
+as \((x,z)\) points in CSV files -- the representation type is textual
+data. However, due to variations in the size and shape of hood frames in
+the dataset, the number of points in a cross-section was not the same.
+Hence a standardized representation was established by defining a
+minimum required number of coordinates per cross-section to address
+this. The first and last 10\% of the points were used to pad the
+boundary coordinates to preserve the overall shape and maintain a
+consistent length of the input data. This approach ensured consistency
+across the dataset while retaining the key geometric features of each
+cross-section. \hyperref[_Ref193054282]{Figure 7} shows an example of
+the cross-section extracted from a hood frame.
+
+\begin{figure}
+\centering
+\includegraphics[width=3.21701in,height=2.5in,alt={A graph with a blue line Description automatically generated}]{media/image8.png}
+\caption{\protect\phantomsection\label{_Ref193054282}{}Figure 7: Example
+of cross-section points extracted from a hood frame}
+\end{figure}
+
+Although the cross-sections provide information on the variation in
+curvature of the hood frame, the ability to accurately capture
+\emph{all} feature depths depends on the location of the slicing plane.
+In some cases, certain critical structural features may not intersect
+with the slicing plane which may impact the performance predictions. To
+address this limitation, the parametric values for depths of the primary
+features (or ribs) are extracted from the dataset using an automated
+script. This ensures that key geometric characteristics influencing
+structural performance are incorporated into the model, even if it is
+not captured in the cross-sections. This information is stored in CSV
+files.
+
+A total of 20 design points from the final dataset of images,
+cross-sections, and parameters were saved separately for validating the
+model after training. These points were not used in the training or
+testing of the model. The rest of the data was split 80/20 for train and
+test datasets. The discussion in the results section utilizes the
+validation data to draw conclusions on the performance and efficiency of
+the model.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\item
+  \textbf{MODEL ARCHITECTURE}
+\end{enumerate}
+
+The research proposes to develop a multimodal neural network
+architecture to predict the performance metrics of car hood frames by
+integrating the three key data modalities: images, geometric data, and
+parametric data, described earlier. The proposed architecture consists
+of \emph{five} individual networks and one final set of fully connected
+layers. \hyperref[_Ref193056345]{Figure 8} shows the MMML architecture
+developed in this research. The \emph{five} individual networks are:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Two separate convolutional networks (Residual Networks -- ResNet50) to
+
+  \begin{enumerate}
+  \def\labelenumii{\alph{enumii}.}
+  \item
+    Extract feature maps from the top views
+  \item
+    Extract feature maps from the side views
+  \end{enumerate}
+\item
+  Two neural networks to learn from the two cross-section datasets
+\item
+  One neural network to process the depth parameters in the frame model
+\end{enumerate}
+
+Other networks like VGGNet {[}26{]}, ResNet100, and AlexNet {[}27{]}
+were also tested and compared against ResNet50. The accuracy and
+computation resources, based on the dataset, remained unchanged. Hence
+the ResNet50 model was chosen as the network to process images in the
+MMML architecture. The input to each network is separate, and the
+networks don't interact with each other. Once all the relevant features
+are extracted from all the modalities, the results are concatenated and
+pooled into a unified representation. This is then fed into a network of
+fully connected layers to make the final prediction on the performance
+of the hood frame. By leveraging multimodal learning, this approach
+ensures a comprehensive understanding of design-performance
+relationships, enhancing prediction accuracy while reducing reliance on
+computationally expensive simulations.
+
+\begin{figure}
+\centering
+\includegraphics[width=3.5in,height=5.48519in]{media/image9.png}
+\caption{\protect\phantomsection\label{_Ref193056345}{}Figure 8:
+Multi-Modal Machine Learning Architecture}
+\end{figure}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Creating Image Embeddings}
+\end{enumerate}
+
+The images are represented as *.jpg files of size 128 X 128 X 1 pixels -
+they are scaled and converted to grayscale. Given that a key
+characteristic of CNN models is extracting features, it is done by
+identifying various components of an image using filters. These filters,
+or vectors with assigned weights, are applied to an image to generate
+feature maps. The network attempts to learn and extract important
+patterns from the input data through this process. From a mathematical
+perspective, an image is represented as a matrix, where each cell
+corresponds to a pixel, and its value indicates the
+pixel\textquotesingle s brightness on a scale from 0 to 1. Each pixel is
+assigned a weight, which can be referred to as its intensity. A filter,
+or a smaller matrix, is then applied to the image resulting in a feature
+map, which is a two-dimensional array that captures essential
+information about the features within the image.
+\hyperref[_Ref193035853]{Figure 9} shows a sample of feature maps and a
+filter for a hood frame model in the dataset. Each feature map
+represents an attempt to identify a significant feature in the image.
+Given the dataset involves images of automotive hood frames, the CNN is
+expected to capture key geometric features, represented visually, such
+as the ribs, pockets, surface curvature, etc. For example, a top-view
+provides insight into how the hood features (primary and secondary ribs,
+pockets, hinges, and locks) are laid out and where the features on the
+hood are located. Similarly, a side-view shows the significance of the
+depth and curvature of the hood frame. These features will help the
+model better understand the shape and size of the features, along with
+their relative positions.
+
+\includegraphics[width=1in,height=0.76478in,alt={A close-up of a heat map AI-generated content may be incorrect.}]{media/image10.jpeg}\includegraphics[width=1in,height=0.77014in,alt={A close-up of a screen AI-generated content may be incorrect.}]{media/image11.jpeg}\includegraphics[width=1in,height=0.76669in,alt={A close-up of a face AI-generated content may be incorrect.}]{media/image12.jpeg}
+
+(a)
+
+\includegraphics[width=1in,height=1.26687in,alt={A chart of a graph AI-generated content may be incorrect.}]{media/image13.png}
+
+(b)
+
+\protect\phantomsection\label{_Ref193035853}{}Figure 9: Example
+visualization of (a) feature maps \& (b) filter
+
+A ResNet50 base model is initialized without the ``top layers'', also
+known as the classification layers. The model is initialized without
+pre-trained weights; in other words, the weights are randomly assigned.
+This allows the model to learn directly from the dataset rather than
+relying on past datasets it has trained on. The extracted features are
+processed through a global pooling layer to reduce the spatial
+dimensions and produce a feature vector for each image. A fully
+connected layer (128 modes deep and a ReLU activation function) followed
+by batch normalization is used to capture complex nonlinear
+relationships within the data and to normalize activations to enhance
+training stability and convergence. As a result, the ResNet50 model
+outputs a 128-dimensional feature vector, which effectively encodes the
+most significant aspects of the image. \hyperref[_Ref193060321]{Figure
+10} shows the architecture of the two image-processing networks.
+
+\begin{figure}
+\centering
+\includegraphics[width=2.74889in,height=1.35404in,alt={A diagram of a computer AI-generated content may be incorrect.}]{media/image14.png}
+\caption{\protect\phantomsection\label{_Ref193060321}{}Figure 10:
+ResNet50 architectures for top and side view images}
+\end{figure}
+
+The feature vector from the CNN model would have captured all the
+important information from the images since, in a CNN model, with each
+subsequent convolution layer, the feature maps influence changes, and
+they focus on the finer details of the features as opposed to the whole
+image. These fine details of the features in the image would then be
+able to provide vital information to predict the performance of a hood
+frame.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\item
+  \textbf{Creating Parametric Data Embedding}
+\end{enumerate}
+
+Neural network models were created for processing the data associated
+with the two cross-sections and parametric data. The structure of the
+networks processing the cross-section data is shown in
+\hyperref[_Ref193061552]{Figure 11}. The input layer takes in the
+cross-section data, followed by a series of hidden layers. Each network
+has a total of six hidden layers of sizes 128, 256, 512, 1024, 512, and
+128 nodes each, all utilizing the ReLU activation function.
+
+\includegraphics[width=1.50182in,height=2.3in,alt={A diagram of a number of units AI-generated content may be incorrect.}]{media/image15.png}\includegraphics[width=1.46225in,height=2.3in,alt={A diagram of a number of units AI-generated content may be incorrect.}]{media/image16.png}
+
+\protect\phantomsection\label{_Ref193061552}{}Figure 11: Neural network
+architectures for cross-section data
+
+A Batch Normalization layer is applied to stabilize activations and
+improve training efficiency, functioning similarly to the batch
+normalization layer in the ResNet50 model. Finally, the output layer
+generates a 128-dimensional feature vector that embeds and captures the
+most critical features of the cross-sections.
+
+The structure of the network processing the parametric data is shown in
+\hyperref[_Ref193061796]{Figure 12}. The input layer takes in the
+parameter (or depth) data, followed by a series of hidden layers. The
+network has a total of four hidden layers of sizes 128, 256, 512, and
+128 nodes each, all utilizing the ReLU activation function. Similar to
+the networks processing the cross-sections, a batch normalization layer
+is used, which then generates a 128-dimensional vector that embeds the
+parametric data.
+
+\begin{figure}
+\centering
+\includegraphics[width=1.57222in,height=1.90566in]{media/image17.png}
+\caption{\protect\phantomsection\label{_Ref193061796}{}Figure 12: Neural
+network for parametric data}
+\end{figure}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\item
+  \textbf{Performance Prediction}
+\end{enumerate}
+
+The fully connected layers play a crucial role in the final prediction.
+Once the significant features are extracted, the fully connected layers
+use these embeddings to make predictions on the output parameters. The
+fully connected layers thus serve as the decision-making component,
+interpreting various aspects of the input data and translating them into
+meaningful predictions regarding its performance.
+
+In the context of hood frame prediction, the final component of the
+multimodal model is a neural network designed to predict the performance
+metrics of car hood frames. The feature embeddings from the ResNet50
+models and the three neural networks are concatenated to create a
+unified representation. \hyperref[_Ref193062912]{Figure 13} shows the
+architecture of the fully connected layers used to make the final
+prediction. The concatenated vector is processed through a series of
+hidden layers consisting of 128, 64, 32, 16, and 3 nodes each. The final
+dense layer includes three nodes, each responsible for predicting a
+distinct performance metric. L2 regularization is applied to prevent
+overfitting, ensuring that excessively large weight values are penalized
+during training. Additionally, dropout layers are utilized, with neurons
+being randomly deactivated at rates of 50\%, 40\%, and 30\% across
+different layers. This regularization technique reduces reliance on
+specific neurons, thereby enhancing generalization. Finally, the output
+from the network consists of three units, each predicting a performance
+metric for the car hood frames.
+
+\begin{figure}
+\centering
+\includegraphics[width=1.14653in,height=2.38681in]{media/image18.png}
+\caption{\protect\phantomsection\label{_Ref193062912}{}Figure 13: Fully
+connected layers for final prediction}
+\end{figure}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\item
+  \textbf{RESULTS AND DISCUSSION}
+\end{enumerate}
+
+The most accurate predictions from a MMML model are achieved by
+fine-tuning various model parameters. Optimizing a model's architecture
+involves several key adjustments, such as modifying the number of layers
+(in both the initial and final models) and updating the number of nodes
+in the neural network. One of the main challenges in this process is
+striking the right balance between model complexity and simplicity.
+Finding the right model architecture and parameter required careful
+tuning. A model that was too simple would risk overfitting the training
+data, leading to poor generalization on the testing dataset. Conversely,
+an overly complex model could potentially struggle to extract meaningful
+insights from the data. The architecture described earlier in this paper
+represents the best balance tested so far---providing strong predictive
+performance without excessive complexity.
+
+In addition to optimizing the model's architecture, fine-tuning the
+hyperparameters is equally critical in improving the performance of the
+model. Hyperparameters such as learning rate, batch size, patience
+value, and the number of training epochs all significantly impact the
+model's performance. The learning rate was one of the most important
+hyperparameters for the MMML model. The initial learning rate was set to
+1e-5, which aids in rapid adjustments, but during training, as the
+number of epochs increases, both training and validation loss tend to
+plateau. This was countered using a dynamic function that updated (or
+lowered) the learning rate every time the loss plateaued. This dynamic
+nature of adjusting the learning rate enabled finer adjustments for
+improved performance and convergence.
+
+\begin{figure}
+\centering
+\includegraphics[width=3.40208in,height=2.61321in,alt={A graph of a graph AI-generated content may be incorrect.}]{media/image19.png}
+\caption{\protect\phantomsection\label{_Ref193066000}{}Figure 14:
+Training and validation loss vs number of epochs}
+\end{figure}
+
+The convergence behavior of the training and validation loss over 100
+epochs is shown in \hyperref[_Ref193066000]{Figure 14}. The term
+validation loss in the figure is actually the ``test'' loss and not from
+the validation dataset. The validation dataset is used only after the
+training is complete. Initially, both losses exhibit a sharp decline,
+indicating rapid learning of key features from the data. A sudden spike
+in the validation loss at the beginning is primarily due to using random
+weights instead of pre-trained weights. Around the 20-epoch mark, the
+validation loss stabilizes, suggesting that the model begins refining
+its learned representations rather than simply memorizing patterns.
+Beyond 50 epochs, both losses approach an asymptotic limit, with minimal
+further reduction, demonstrating that the model has reached an optimal
+state. Notably, the validation loss remains closely aligned with the
+training loss throughout the training process. This indicates that the
+model is neither overfitting nor underfitting but generalizes well to
+unseen data. The absence of significant divergence between the two
+losses suggests that appropriate regularization techniques were applied,
+ensuring stable learning dynamics. The smooth convergence further
+highlights the benefits of an adaptive learning rate strategy,
+preventing premature stagnation or excessive oscillations in model
+performance. The model was trained on a Windows operating system, using
+an NVIDIA RTX A5000 GPU running on a 13th Gen Intel Core i9-13900K
+processor with 64GB RAM.
+
+\textbf{5.1 Results from Validation Dataset}
+
+Once training was complete, the model was validated using the validation
+dataset. Three separate graphs were generated to assess the model
+performance. Each plot shows the prediction of a performance metric --
+von Mises stress, mass, or deflection. The figures below illustrate the
+model's average error across these categories and individual error
+distributions for each data point.
+
+\includegraphics[width=3.56in,height=1.99945in,alt={A graph of a graph with numbers and a line AI-generated content may be incorrect.}]{media/image20.png}
+
+\begin{enumerate}
+\def\labelenumi{(\alph{enumi})}
+\item
+  vM stress (MPa) vs design points
+\end{enumerate}
+
+\includegraphics[width=3.56in,height=2.06998in,alt={A graph with numbers and lines AI-generated content may be incorrect.}]{media/image21.png}
+
+\begin{enumerate}
+\def\labelenumi{(\alph{enumi})}
+\setcounter{enumi}{1}
+\item
+  Mass (kg) vs design points
+\end{enumerate}
+
+\includegraphics[width=3.56in,height=2.03627in,alt={A graph with numbers and lines AI-generated content may be incorrect.}]{media/image22.png}
+
+\begin{enumerate}
+\def\labelenumi{(\alph{enumi})}
+\setcounter{enumi}{2}
+\item
+  Directional deflection (mm) vs design points
+\end{enumerate}
+
+\protect\phantomsection\label{_Ref193068838}{}Figure 15: Actual vs
+predicted values for the validation data (a) vM stress, (b) mass, and
+(c) directional deflection
+
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.1760}}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.0988}}@{}}
+\caption{Table 1: Average error in the predicted values for the
+CarHoods10k dataset (based on \hyperref[_Ref193068838]{Figure
+15})}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\textbf{Output Parameter}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{Error \%}
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\textbf{Output Parameter}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{Error \%}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+vM Stress & 5.48\% \\
+Mass & 9.27\% \\
+Deflection & 16.84\% \\
+\end{longtable}
+
+The MMML model performed quite well on the validation dataset, with
+error percentages well below 20\%. These results were compared to
+another model using the same dataset and performance metrics as
+discussed by Kumar et al. in {[}18{]}. The results from this research
+are significantly better than the unimodal model (trained only on
+images) used in the other research. Kumar et al. had a confidence
+interval of 20\% with a model accuracy of 90\%, as compared to the MMML
+model, which had an accuracy of over 94\% and confidence intervals in
+single digits for stress and mass and around 17\% for deflection as
+noted in the table above.
+
+5.2 Model Performance on Unseen Hood Frame Designs
+
+To evaluate the generalizability of the proposed model, two hood frame
+designs, not part of CarHoods10k, were tested. The designs were sourced
+from an online community platform (GrabCAD {[}28{]}).
+\hyperref[_Ref193069767]{Figure 16} and \hyperref[_Ref193069768]{Figure
+17} show the top and side views, along with the details on the
+cross-sections, of the two hood frames. These models underwent the same
+preprocessing steps, including data extraction and finite element
+analysis (FEA) using a similar model setup (to the CarHoods10k dataset).
+The FEA model setup for the two frames is shown in
+\hyperref[_Ref193070448]{Figure 18}. The FEA results served as ground
+truth, allowing the proposed model to compare the predicted performance
+values. \hyperref[_Ref193070777]{Figure 19} shows the model's
+predictions of performance compared to the actual FEA results, and
+\hyperref[_Ref193070835]{Table 2} shows the average error in prediction.
+
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2373}}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2373}}@{}}
+\caption{\protect\phantomsection\label{_Ref193069767}{}Figure 16: (a)
+Top view, (b) cross-section locations, (c) side view, and (d)
+cross-section points for Model 1}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.78417in]{media/image23.png}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.86489in,alt={A drawing of a curved road AI-generated content may be incorrect.}]{media/image24.png}
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.78417in]{media/image23.png}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.86489in,alt={A drawing of a curved road AI-generated content may be incorrect.}]{media/image24.png}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+(a) & (b) \\
+\includegraphics[width=1.5in,height=0.35588in,alt={A paper model of a spaceship AI-generated content may be incorrect.}]{media/image25.png}
+&
+\includegraphics[width=1.49955in,height=0.93913in]{media/image26.png} \\
+(c) & (d) \\
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2373}}
+  >{\centering\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2373}}@{}}
+\caption{\protect\phantomsection\label{_Ref193069768}{}Figure 17: (a)
+Top view, (b) cross-section locations, (c) side view, and (d)
+cross-section points for Model 2}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=1.51941in,alt={A black object with holes AI-generated content may be incorrect.}]{media/image27.jpeg}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.77577in,alt={A drawing of a curved object AI-generated content may be incorrect.}]{media/image28.png}
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=1.51941in,alt={A black object with holes AI-generated content may be incorrect.}]{media/image27.jpeg}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.77577in,alt={A drawing of a curved object AI-generated content may be incorrect.}]{media/image28.png}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+(a) & (b) \\
+\includegraphics[width=1.5in,height=0.25643in,alt={A close up of a roof AI-generated content may be incorrect.}]{media/image29.jpeg}
+&
+\includegraphics[width=1.49955in,height=0.96522in]{media/image30.png} \\
+(c) & (d) \\
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0917}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0677}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0887}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0677}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0887}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0718}}@{}}
+\caption{\protect\phantomsection\label{_Ref193070448}{}Figure 18: FEA
+setup for hood frames}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.78416in,alt={A close-up of a metal object AI-generated content may be incorrect.}]{media/image31.png}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=2in,height=1.39016in,alt={A model of a race track AI-generated content may be incorrect.}]{media/image32.png}
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=1.5in,height=0.78416in,alt={A close-up of a metal object AI-generated content may be incorrect.}]{media/image31.png}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\includegraphics[width=2in,height=1.39016in,alt={A model of a race track AI-generated content may be incorrect.}]{media/image32.png}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+(a) & (b) \\
+\includegraphics[width=1.4in,height=1.42708in]{media/image33.png} &
+\includegraphics[width=2.18681in,height=1.42708in]{media/image34.png} \\
+(c) & (d) \\
+\end{longtable}
+
+As shown in \hyperref[_Ref193070777]{Figure 19}(a), the predicted stress
+values are slightly lower than the actual values (from FEA), with an
+average underprediction of 18.52\%. While the model tends to be
+conservative in its stress estimates, the predictions are still within a
+reasonable range, capturing the general trend of stress distribution.
+This indicates that the model is not randomly over- or underestimating
+values but rather making consistent and physically plausible
+predictions, avoiding extreme overfitting to the training data.
+
+\hyperref[_Ref193070777]{Figure 19}(b) shows that the model overpredicts
+mass, with an average error of 32.94\%. While there is a tendency to
+overestimate mass, this does not indicate overfitting. Instead, the
+model slightly biases mass estimates towards safer, heavier designs.
+Given that mass estimation is influenced by multiple geometric
+parameters, small shifts in feature representation could explain these
+variations. Importantly, the model still captures the correct order of
+magnitude and does not diverge drastically from the actual value.
+
+\begin{figure}
+\centering
+\includegraphics[width=3.56042in,height=2.14028in]{media/image35.png}
+\caption{(a)}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=3.56042in,height=2.14028in]{media/image37.png}
+\caption{\includegraphics[width=3.56042in,height=2.14028in]{media/image36.png}\\
+(b)}
+\end{figure}
+
+(c)
+
+\protect\phantomsection\label{_Ref193070777}{}Figure 19: Model
+prediction vs actual values (a) stress, (b) mass, and (c) deflection
+
+\hyperref[_Ref193070777]{Figure 19}(c) shows that the model's deflection
+predictions are lower than the FEA results with an average error of
+28.33\%. One potential reason for underprediction could be the presence
+of geometrical features (and their shapes) that are unique to this
+frame, and nothing remotely similar exists in the training dataset.
+However, the predictions remain physically reasonable and trend in the
+correct direction, reinforcing that the model is capturing the overall
+behavior of hood frame designs rather than memorizing specific patterns.
+
+The results indicate a strong performance of the model, given that the
+new hood frames are not a part of the training dataset and the MMML
+model has never seen these before. This demonstrates the MMML model's
+robustness and ability to generalize beyond the training dataset.
+
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0917}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0677}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0887}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0677}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0887}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0718}}@{}}
+\caption{\protect\phantomsection\label{_Ref193070835}{}Table 2: Actual
+vs predicted values (and average error) for new hood
+models}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Model}
+
+\textbf{Output}
+\end{minipage} &
+\multicolumn{2}{>{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1564} + 2\tabcolsep}}{%
+\begin{minipage}[b]{\linewidth}\centering
+\textbf{Hood Frame 1}
+\end{minipage}} &
+\multicolumn{2}{>{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1564} + 2\tabcolsep}}{%
+\begin{minipage}[b]{\linewidth}\centering
+\textbf{Hood Frame 2}
+\end{minipage}} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{Avg. Error}
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Model}
+
+\textbf{Output}
+\end{minipage} &
+\multicolumn{2}{>{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1564} + 2\tabcolsep}}{%
+\begin{minipage}[b]{\linewidth}\centering
+\textbf{Hood Frame 1}
+\end{minipage}} &
+\multicolumn{2}{>{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1564} + 2\tabcolsep}}{%
+\begin{minipage}[b]{\linewidth}\centering
+\textbf{Hood Frame 2}
+\end{minipage}} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{Avg. Error}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+& \textbf{Actual Value} & \textbf{Predicted Value} & \textbf{Actual
+Value} & \textbf{Predicted Value} & \textbf{\%} \\
+\textbf{vM Stress (MPa)} & 207.5 & 156.88 & 152.49 & 133.19 & 18.52\% \\
+\textbf{Geometry Mass (kg)} & 9.68 & 13.24 & 10.53 & 13.60 & 32.94\% \\
+\textbf{Dir. Def. (mm)} & 10.03 & 7.78 & 11.74 & 7.78 & 28.33\% \\
+\end{longtable}
+
+5.3 Comparing Unimodal vs Multimodal Performance
+
+To quantitatively assess the effectiveness of the multimodal approach,
+the predictions from the MMML model were compared to predictions from a
+unimodal (image-based) architecture. Although the unimodal architecture
+only used images, it used a multiview-CNN approach {[}29{]}, to consider
+both the top and side views in making the predictions. The evaluation
+was conducted for both the CarHoods10K datasets, as well as the two new
+hood frames.
+
+\includegraphics[width=2.75in,height=2.20242in,alt={A graph showing different values AI-generated content may be incorrect.}]{media/image38.jpeg}
+
+(a)
+
+\includegraphics[width=2.75in,height=2.24179in,alt={A graph showing different values AI-generated content may be incorrect.}]{media/image39.jpeg}
+
+(b)
+
+\includegraphics[width=2.75in,height=2.25051in,alt={A graph of different values AI-generated content may be incorrect.}]{media/image40.jpeg}
+
+(c)
+
+\protect\phantomsection\label{_Ref193073344}{}Figure 20: Average model
+performance for unimodal (images only) vs multimodal for CarHoods10k and
+new hood frames
+
+The (average) prediction accuracies for the two models are compared to
+the actual values (from FEA) shown in \hyperref[_Ref193073344]{Figure
+20}. The stress prediction results (\hyperref[_Ref193073344]{Figure
+20}(a)) demonstrate that the multimodal model consistently outperforms
+the unimodal model by providing predictions closer to the actual values.
+The results are summarized in \hyperref[_Ref193074567]{Table 3}.
+
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1235}}
+  >{\centering\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1079}}
+  >{\centering\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.0816}}
+  >{\centering\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.0816}}
+  >{\centering\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.0812}}@{}}
+\caption{\protect\phantomsection\label{_Ref193074567}{}Table 3: Summary
+of average error \% in prediction for the two models on two different
+datasets}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+Dataset
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Model
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Stress Error \%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Mass Error \%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Def. Error \%
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+Dataset
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Model
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Stress Error \%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Mass Error \%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Def. Error \%
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\multirow{2}{=}{\centering\arraybackslash CarHoods10k} & Unimodal &
+8.2\% & 8.1\% & 15.2\% \\
+& Multimodal & 3.6\% & 4.7\% & 10.5\% \\
+\multirow{2}{=}{\centering\arraybackslash New Models} & Unimodal &
+50.3\% & 9.6\% & 48\% \\
+& Multimodal & 19.4\% & 32.9\% & 28.7\% \\
+\end{longtable}
+
+The results indicate that the MMML model consistently performs better on
+all the performance metrics on the CarHoods10k dataset. It also performs
+extremely well in improving the predictions of the stress and deflection
+values for the two unseen hood frame models. Overall, these findings
+demonstrate that multimodal models leveraging geometric, parametric, and
+image-based information outperform unimodal approaches, especially in
+out-of-distribution scenarios. The ability to maintain predictive
+accuracy on a previously unseen dataset supports the argument that
+multimodal learning is a robust framework for structural performance
+prediction tasks.
+
+\textbf{5.4 Summary}
+
+These results indicate that the multimodal learning model successfully
+generalizes to new designs without signs of overfitting (which would
+manifest as near-perfect predictions for training data but poor
+performance on unseen data) or severe underfitting (resulting in
+completely random or highly inaccurate estimates). The stress and
+deflection predictions are slightly conservative, which is preferable in
+many engineering applications where safety is a priority. While slightly
+overestimated, the mass predictions remain within a reasonable deviation
+and do not indicate an erratic or unstructured response. Importantly,
+the model correctly captures the relative differences between the two
+new designs, reinforcing that it has captured meaningful structural
+relationships.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\item
+  \textbf{CONCLUSION}
+\end{enumerate}
+
+By reducing reliance on computationally expensive simulations, the
+proposed MMML architecture enhances the efficiency of design
+exploration, enabling engineers to iterate rapidly while maintaining
+high-performance standards. This work contributes to the broader
+adoption of machine learning in engineering design, demonstrating its
+potential to supplement traditional simulation-based workflows and
+accelerate the development of optimized structures, especially in the
+conceptual design phase.
+
+The proposed architecture also demonstrates that MMML outperforms
+single-modality approaches, highlighting the benefit of combining and
+using \emph{different forms of the same data}. Additionally, the MMML
+model was tested on unseen frame models, showcasing its potential for
+generalization beyond the training dataset. The key contributions in the
+work can be summarized as:
+
+\begin{itemize}
+\item
+  Developed an MMML architecture and demonstrated the use of multiple
+  modalities to effectively train ML models
+\item
+  Compared the performance of a multimodal architecture to an unimodal
+  architecture and validated the effect of utilizing multiple modalities
+  to yield better results
+\item
+  Showcased the model's ability to extend beyond the CarHoods10K
+  dataset, demonstrating its generalization to unseen data. However,
+  additional testing on varied hood frame designs is necessary for
+  broader applicability.
+\end{itemize}
+
+Ultimately, this study highlights the potential of MMML in reducing
+reliance on simulation, accelerating the design cycle, and enabling
+rapid performance evaluation. As machine learning continues to integrate
+into engineering workflows, refining multimodal approaches will be key
+to bridging the gap between predictive models and real-world
+applications.
+
+\textbf{6.1 Future Work}
+
+Despite these strengths, several areas for improvement remain. The
+current parametric representation, which relies on cross-sectional data,
+may not fully capture intricate geometric features such as ribs or
+pockets, which play a crucial role in structural performance. Future
+work will explore alternative parametric representations, potentially
+incorporating more granular feature-based data and geometric parameters
+to provide additional insight into the geometries. Similarly, the image
+input could be refined to focus on extracted features rather than full
+geometry images, allowing the model to learn more relevant patterns
+without redundant information. Future iterations of this model should
+investigate more structured feature selection techniques to preserve
+essential design characteristics while maintaining computational
+efficiency.
+
+As the framework continues to evolve, balancing prediction accuracy with
+generalizability remains a priority. While reducing error rates is
+desirable, overly precise models risk overfitting, limiting their
+applicability to new and diverse designs. By continuously testing on
+significantly different hood frame geometries, future research will
+assess the robustness of the model across a broader range of engineering
+applications.
+
+\textbf{ACKNOWLEDGEMENTS}
+
+The authors would like to thank Simon Vaglienti and Sandesh Kumawat for
+their contributions to the project.\\
+\strut \\
+\textbf{REFERENCES}
+
+{[}1{]} Pahl, G., and Beitz, W., 1996, \emph{Engineering Design---A
+System- Atic Approach}, Springer London.
+
+{[}2{]} Heisig, C. P., and Williams-Harkcom, M. A., 1987, ``Integration
+of CAD and FEA for Design of Fabricated Structures.''
+https://doi.org/10.4271/872017.
+
+{[}3{]} Kim, D.-H., Jung, K.-H., Kim, D.-J., Park, S.-H., Kim, D.-H.,
+Lim, J., Nam, B.-G., and Kim, H.-S., 2017, ``Improving Pedestrian Safety
+via the Optimization of Composite Hood Structures for Automobiles Based
+on the Equivalent Static Load Method,'' Compos Struct, \textbf{176}, pp.
+780--789. https://doi.org/10.1016/j.compstruct.2017.06.016.
+
+{[}4{]} Wynn, D. C., and Maier, A. M., 2022, ``Feedback Systems in the
+Design and Development Process,'' Res Eng Des, \textbf{33}(3), pp.
+273--306. https://doi.org/10.1007/s00163-022-00386-z.
+
+{[}5{]} Liang, P. P., Zadeh, A., and Morency, L.-P., 2022, ``Foundations
+and Trends in Multimodal Machine Learning: Principles, Challenges, and
+Open Questions,'' ArXiv.
+
+{[}6{]} Liu, A., Zhang, D., Wang, Y., and Xu, X., 2022, ``Knowledge
+Graph with Machine Learning for Product Design,'' CIRP Annals,
+\textbf{71}(1), pp. 117--120.
+https://doi.org/10.1016/j.cirp.2022.03.025.
+
+{[}7{]} Bodendorf, F., and Franke, J., 2021, ``A Machine Learning
+Approach to Estimate Product Costs in the Early Product Design Phase: A
+Use Case from the Automotive Industry,'' Procedia CIRP, \textbf{100},
+pp. 643--648. https://doi.org/10.1016/j.procir.2021.05.137.
+
+{[}8{]} Ocker, F., Menzel, S., Sadik, A., and Rios, T., 2025, ``From
+Idea to CAD: A Language Model-Driven Multi-Agent System for
+Collaborative Design.''
+
+{[}9{]} Wong, M., Rios, T., Menzel, S., and Ong, Y. S., 2024, ``Prompt
+Evolutionary Design Optimization with Generative Shape and
+Vision-Language Models,'' \emph{2024 IEEE Congress on Evolutionary
+Computation (CEC)}, IEEE, pp. 1--8.
+https://doi.org/10.1109/CEC60901.2024.10611898.
+
+{[}10{]} Rios, T., Menzel, S., and Sendhoff, B., 2023, ``Large Language
+and Text-to-3D Models for Engineering Design Optimization,'' \emph{2023
+IEEE Symposium Series on Computational Intelligence (SSCI)}, IEEE, pp.
+1704--1711. https://doi.org/10.1109/SSCI52147.2023.10371898.
+
+{[}11{]} Jun, H., and Nichol, A., 2023, ``Shap-E: Generating Conditional
+3D Implicit Functions.''
+
+{[}12{]} Zhan, Z., Fengyao, L., Xin, R., Zhou, G., Zhao, S., He, X.,
+Wang, J., and Li, J., 2023, ``Automotive Hood Design Based on Machine
+Learning and Structural Design Optimization.''
+https://doi.org/10.4271/2023-01-0744.
+
+{[}13{]} Parcalabescu, L., Trost, N., and Frank, A., 2021, ``What Is
+Multimodality?''
+
+{[}14{]} Baltrušaitis, T., Ahuja, C., and Morency, L.-P., 2017,
+``Multimodal Machine Learning: A Survey and Taxonomy.''
+
+{[}15{]} Su, H., Song, B., and Ahmed, F., 2023, ``Multi-Modal Machine
+Learning for Vehicle Rating Predictions Using Image, Text, and
+Parametric Data,'' \emph{Volume 2: 43rd Computers and Information in
+Engineering Conference (CIE)}, American Society of Mechanical Engineers.
+https://doi.org/10.1115/DETC2023-115076.
+
+{[}16{]} Li, X., Sun, Y., and Sha, Z., 2024, ``LLM4CAD: Multi-Modal
+Large Language Models for 3D Computer-Aided Design Generation,''
+\emph{Volume 6: 36th International Conference on Design Theory and
+Methodology (DTM)}, American Society of Mechanical Engineers.
+https://doi.org/10.1115/DETC2024-143740.
+
+{[}17{]} Gong, S., Wang, S., Zhu, T., Shao-Horn, Y., and Grossman, J.
+C., 2023, ``Multimodal Machine Learning for Materials Science:
+Composition-Structure Bimodal Learning for Experimentally Measured
+Properties.''
+
+{[}18{]} Kumar, P., 2024, ``A Study on the Extraction of Geometrical
+Parameters from Flexible Mechanical Components and Assemblies and Their
+Impact on Performance: A Machine Learning Approach,'' M.S. Thesis,
+Arizona State University. {[}Online{]}. Available:
+https://keep.lib.asu.edu/items/195239. {[}Accessed: 15-Mar-2025{]}.
+
+{[}19{]} Wollstadt, P., Bujny, M., Ramnath, S., Shah, J. J., Detwiler,
+D., and Menzel, S., 2022, ``CarHoods10k: An Industry-Grade Data Set for
+Representation Learning and Design Optimization in Engineering
+Applications,'' IEEE Transactions on Evolutionary Computation, pp. 1--1.
+https://doi.org/10.1109/TEVC.2022.3147013.
+
+{[}20{]} Hwang, J.-J., Xu, R., Lin, H., Hung, W.-C., Ji, J., Choi, K.,
+Huang, D., He, T., Covington, P., Sapp, B., Zhou, Y., Guo, J., Anguelov,
+D., and Tan, M., 2024, ``EMMA: End-to-End Multimodal Model for
+Autonomous Driving.''
+
+{[}21{]} Acosta, J. N., Falcone, G. J., Rajpurkar, P., and Topol, E. J.,
+2022, ``Multimodal Biomedical AI,'' Nat Med, \textbf{28}(9), pp.
+1773--1784. https://doi.org/10.1038/s41591-022-01981-2.
+
+{[}22{]} Ramnath, S., Shah, J. J., Wollstadt, P., Bujny, M., Menzel, S.,
+and Detwiler, D., 2022, ``OSU-Honda Automobile Hood Dataset
+(CarHoods10k),'' \emph{Dryad Dataset}.
+https://doi.org/10.5061/dryad.2fqz612pt.
+
+{[}23{]} Ramnath, S., Haghighi, P., Kim, J. H., Detwiler, D., Berry, M.,
+Shah, J. J., Aulig, N., Wollstadt, P., and Menzel, S., 2019,
+``Automatically Generating 60,000 CAD Variants for Big Data
+Applications,'' \emph{International Design Engineering Technical
+Conferences and Computers and Information in Engineering Conference}.
+
+{[}24{]} Ramnath, S., Haghighi, P., Ma, J., Shah, J. J., and Detwiler,
+D., 2020, ``Design Science Meets Data Science: Curating Large Design
+Datasets for Engineered Artifacts,'' \emph{International Design
+Engineering Technical Conferences and Computers and Information in
+Engineering Conference}.
+
+{[}25{]} He, K., Zhang, X., Ren, S., and Sun, J., 2016, ``Deep Residual
+Learning for Image Recognition,'' \emph{Proceedings of the IEEE Computer
+Society Conference on Computer Vision and Pattern Recognition}, pp.
+770--778. https://doi.org/10.1109/CVPR.2016.90.
+
+{[}26{]} Simonyan Karen, and Zisserman Andrew, 2015, ``Very Deep
+Convolutional Networks for Large-Scale Image Recognition,'' \emph{3rd
+International Conference on Learning Representations, ICLR 2015 -
+Conference Track Proceedings}, p. 14. {[}Online{]}. Available:
+https://www.researchgate.net/publication/265385906\_Very\_Deep\_Convolutional\_Networks\_for\_Large-Scale\_Image\_Recognition\%0Ahttp://www.robots.ox.ac.uk/.
+
+{[}27{]} Krizhevsky, A., Sutskever, I., and Hinton, G. E., 2017,
+``ImageNet Classification with Deep Convolutional Neural Networks,''
+Commun ACM, \textbf{60}(6), pp. 84--90. https://doi.org/10.1145/3065386.
+
+{[}28{]} GrabCAD, ``GrabCAD Library.'' {[}Online{]}. Available:
+https://grabcad.com/. {[}Accessed: 15-Mar-2025{]}.
+
+{[}29{]} Su, H., Maji, S., Kalogerakis, E., and Learned-Miller, E.,
+2015, ``Multi-View Convolutional Neural Networks for 3D Shape
+Recognition.''
+
+~
